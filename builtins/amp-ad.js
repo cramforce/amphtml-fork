@@ -15,6 +15,7 @@
  */
 
 import {BaseElement} from '../src/base-element';
+import {getAdIframeSrc} from './amp-ad-iframe-prefixes'
 import {isLayoutSizeDefined} from '../src/layout';
 import {loadPromise} from '../src/event-helper';
 import {registerElement} from '../src/custom-element';
@@ -32,20 +33,31 @@ export function installAd(win) {
     }
 
     /** @override */
-    createdCallback() {
-      /** @private {?Element} */
-      this.iframe_ = null;
+    layoutCallback() {
+      if (this.element.getAttribute('iframe-src')) {
+        return directIframeLayout();
+      }
+      return threePFrameLayout();
     }
 
-    /** @override */
-    layoutCallback() {
-      if (!this.iframe_) {
-        this.iframe_ = getIframe(this.element.ownerDocument.defaultView,
+    threePFrameLayout() {
+      var iframe = getIframe(this.element.ownerDocument.defaultView,
             this.element);
-        this.applyFillContent(this.iframe_);
-        this.element.appendChild(this.iframe_);
-      }
-      return loadPromise(this.iframe_);
+      this.applyFillContent(iframe);
+      this.element.appendChild(iframe);
+      return loadPromise(iframe);
+    }
+
+    directIframeLayout() {
+      var src = getAdIframeSrc(this.element);
+      var iframe = document.createElement('iframe');
+      iframe.setAttribute('frameborder', '0');
+      iframe.src = src;
+      this.applyFillContent(iframe);
+      iframe.width = width;
+      iframe.height = height;
+      this.element.appendChild(iframe);
+      return loadPromise(iframe);
     }
   }
 
